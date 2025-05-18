@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import "./base.css";
 import gsap from 'gsap';
 import { ScrollTrigger, ScrollSmoother, ScrollToPlugin, SplitText } from "gsap/all";
@@ -9,12 +9,16 @@ gsap.registerPlugin(ScrollTrigger, ScrollSmoother, ScrollToPlugin, SplitText);
 const Project = () => {
   const sceneWrapperRef = useRef(null);
   const previewWrapperRef = useRef(null);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   useGSAP(() => {
     const sceneWrapper = sceneWrapperRef.current;
     const splitMap = new Map();
-    let isAnimating = false;
     let smoother;
+
+    // Store references to event handlers for cleanup
+    const sceneTitleHandlers = [];
+    const previewCloseHandlers = [];
 
     /**
      * Returns an array of transform strings to evenly space carousel cells in 3D
@@ -292,9 +296,9 @@ const Project = () => {
      */
     const animatePreviewGridIn = (preview) => {
       const items = preview.querySelectorAll('.grid__item');
-      // Clear any inline styles from previous animations
+      // Reset preview styles
+      gsap.set(preview, { pointerEvents: 'auto', autoAlpha: 1 });
       gsap.set(items, { clearProps: 'all' });
-      // Trigger grid item entrance animation from center of screen
       animateGridItems({
         items,
         centerX: window.innerWidth / 2,
@@ -381,6 +385,12 @@ const Project = () => {
       selector = '.preview__title span, .preview__close'
     ) => {
       preview.querySelectorAll(selector).forEach((el) => {
+        // Always re-split before animating in
+        if (direction === 'in') {
+          if (splitMap.has(el)) splitMap.get(el).revert();
+          const split = SplitText.create(el, { type: 'chars', charsClass: 'char', autoSplit: true });
+          splitMap.set(el, split);
+        }
         const chars = splitMap.get(el)?.chars || [];
         animateChars(chars, direction);
       });
@@ -394,7 +404,7 @@ const Project = () => {
     const activatePreviewFromCarousel = (e) => {
       e.preventDefault();
       if (isAnimating) return;
-      isAnimating = true;
+      setIsAnimating(true);
 
       const titleEl = e.currentTarget;
       const { wrapper, carousel, cards, chars } =
@@ -411,7 +421,7 @@ const Project = () => {
         .timeline({
           defaults: { duration: 1.5, ease: 'power2.inOut' },
           onComplete: () => {
-            isAnimating = false;
+            setIsAnimating(false);
             ScrollTrigger.getAll().forEach((t) => t.enable());
             carousel._timeline.scrollTrigger.scroll(targetY);
           },
@@ -452,6 +462,7 @@ const Project = () => {
         .add(() => {
           const previewSelector = titleEl.querySelector('a')?.getAttribute('href');
           const preview = document.querySelector(previewSelector);
+          // Reset preview styles before animating in
           gsap.set(preview, { pointerEvents: 'auto', autoAlpha: 1 });
           animatePreviewGridIn(preview);
           animatePreviewTexts(preview, 'in');
@@ -465,7 +476,7 @@ const Project = () => {
      */
     const deactivatePreviewToCarousel = (e) => {
       if (isAnimating) return;
-      isAnimating = true;
+      setIsAnimating(true);
 
       const preview = e.currentTarget.closest('.preview');
       if (!preview) return;
@@ -493,7 +504,7 @@ const Project = () => {
           defaults: { duration: 1.3, ease: 'expo' },
           onComplete: () => {
             smoother.paused(false);
-            isAnimating = false;
+            setIsAnimating(false);
           },
         })
         .fromTo(
@@ -525,9 +536,6 @@ const Project = () => {
     };
 
     // Store references to event handlers for cleanup
-    const sceneTitleHandlers = [];
-    const previewCloseHandlers = [];
-
     const initEventListeners = () => {
       // Scene titles
       document.querySelectorAll('.scene__title').forEach((title) => {
@@ -541,6 +549,13 @@ const Project = () => {
         btn.addEventListener('click', handler);
         previewCloseHandlers.push({ el: btn, handler });
       });
+    };
+
+    const removeEventListeners = () => {
+      sceneTitleHandlers.forEach(({ el, handler }) => el.removeEventListener('click', handler));
+      previewCloseHandlers.forEach(({ el, handler }) => el.removeEventListener('click', handler));
+      sceneTitleHandlers.length = 0;
+      previewCloseHandlers.length = 0;
     };
 
     /**
@@ -599,22 +614,29 @@ const Project = () => {
 
     init();
 
-    // Cleanup on unmount
+    // --- CLEANUP ---
     return () => {
       // Remove resize listener
       window.removeEventListener("resize", ScrollTrigger.refresh);
 
-      // Remove all event listeners added
-      sceneTitleHandlers.forEach(({ el, handler }) => el.removeEventListener('click', handler));
-      previewCloseHandlers.forEach(({ el, handler }) => el.removeEventListener('click', handler));
+      // Remove all event listeners
+      removeEventListeners();
 
       // Revert all SplitText instances
-      splitMap.forEach(split => split.revert && split.revert());
+      splitMap.forEach(split => split && split.revert && split.revert());
 
       // Kill all ScrollTriggers
       ScrollTrigger.getAll().forEach(t => t.kill());
+
+      // Kill all GSAP timelines (if you store them)
+      document.querySelectorAll('.carousel').forEach(carousel => {
+        if (carousel._timeline) {
+          carousel._timeline.kill();
+          carousel._timeline = null;
+        }
+      });
     };
-  }, []);
+  }, [isAnimating]);
 
   return (
     <div>
