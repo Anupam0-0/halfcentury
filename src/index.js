@@ -1,5 +1,8 @@
 // Import utility function for preloading images
 
+import { gsap } from 'gsap';
+import { ScrollTrigger, ScrollSmoother, ScrollToPlugin, SplitText } from 'gsap/ScrollTrigger';
+
 import { preloadImages } from './utils.js';
 
 // Register the GSAP plugins
