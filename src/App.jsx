@@ -9,20 +9,24 @@ const App = () => {
   useEffect(() => {
     const preloadImages = (selector = 'img') => {
       return new Promise((resolve) => {
-        // The imagesLoaded library is used to ensure all images (including backgrounds) are fully loaded.
         imagesLoaded(document.querySelectorAll(selector), { background: true }, resolve);
       });
     };
 
+    let timer;
+
     preloadImages().then(() => {
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         const loading = document.querySelector(".loading");
         if (loading) {
-          loading.classList.remove("loading");
+          loading.classList.remove("loading"); // Add a class to indicate loading is done
         }
       }, 500);
-      return () => clearTimeout(timer);
     });
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   

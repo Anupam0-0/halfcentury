@@ -80,6 +80,7 @@ const Project = () => {
               carouselRef={setRef(carouselRefs, idx)}
               images={scene.images}
               idx={idx}
+              radius={scene.radius}
             />
           ))}
         </div>

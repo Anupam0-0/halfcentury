@@ -156,6 +156,7 @@ export const scenes = [
       img53,
       img54,
     ],
+    radius: 700,
     gridItems: [
       { img: img49, caption: "Rylan Ash" },
       { img: img50, caption: "Lyra Wren" },

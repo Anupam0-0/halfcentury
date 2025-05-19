@@ -1,8 +1,10 @@
+
 *,
 *::after,
 *::before {
   box-sizing: border-box;
 }
+
 
 :root {
   font-size: 14px;
@@ -18,6 +20,7 @@
   --column: 80px;
   --column-count: 3;
   --border-radius: 4px;
+  
 }
 
 html {
@@ -219,6 +222,8 @@ a {
 
 .scene__title span {
   display: inline-block;
+  font-size: 700;
+  font-size: 21px;
 }
 
 .scene__title .char {
@@ -264,7 +269,8 @@ a {
   height: 100%;
   position: absolute;
   backface-visibility: hidden;
-  background-image: var(--img);
+  /* Set a default image as a fallback */
+  background-image: var(--img, url('https://via.placeholder.com/350x420'));
   background-size: cover;
 }
 
