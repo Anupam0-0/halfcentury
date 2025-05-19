@@ -15,10 +15,13 @@ const App = () => {
     };
 
     preloadImages().then(() => {
-      const loading = document.querySelector(".loading");
-      if (loading) {
-      loading.classList.remove("loading");
-      }
+      const timer = setTimeout(() => {
+        const loading = document.querySelector(".loading");
+        if (loading) {
+          loading.classList.remove("loading");
+        }
+      }, 500);
+      return () => clearTimeout(timer);
     });
   }, []);
 
